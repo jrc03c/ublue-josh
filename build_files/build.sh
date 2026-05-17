@@ -9,16 +9,26 @@ set -ouex pipefail
 # List of rpmfusion packages can be found here:
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
 
-# this installs a package from fedora repos
-dnf5 install -y @cinnamon-desktop curl git micro rsync wget 
+dnf5 install -y \
+    @cinnamon-desktop \
+    lightdm \
+    lightdm-gtk \
+    cinnamon-control-center \
+    cinnamon-screensaver \
+    cinnamon-session \
+    cinnamon-settings-daemon \
+    nemo nemo-extensions \
+    mint-themes mint-x-icons mint-y-icons \
+    curl git micro rsync wget
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+# Switch display manager: GDM (default in base-main) -> LightDM
+systemctl disable gdm.service || true
+systemctl enable lightdm.service
 
-#### Example for enabling a System Unit File
+# Rebuild initramfs with --no-hostonly so it contains drivers for any hardware,
+# not just what the build container sees. This is what prevents the
+# "boots fine in the build, panics on real metal" failure mode.
+KVER=$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}\n' | tail -1)
+dracut --force --no-hostonly --kver "$KVER"
 
 systemctl enable podman.socket
